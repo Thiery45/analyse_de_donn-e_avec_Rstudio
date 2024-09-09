@@ -1,0 +1,155 @@
+# import package###
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(purrr)
+library(tidyr)
+library(ggplot2)
+library(SmartEDA)
+library(janitor)
+library(openxlsx)
+# 1)- Charger le fichier .rds
+customer_Flight_Activity1<- readRDS("C:/Users/arman/OneDrive/Bureau/ExamensR/code customer_flight_activity/input/Customer_Flight_Activity.rds")
+
+# 2)- vérification de la base###
+dim(customer_Flight_Activity1)
+
+length(customer_Flight_Activity1)
+
+glimpse(customer_Flight_Activity1)
+
+names(customer_Flight_Activity1)
+
+# 3)- vérifions le type de variable dans la table###
+str(customer_Flight_Activity1)
+
+# 4)- convertir toutes les variables en numeric sauf Loyalty Number, Year, Month###
+
+customer_Flight_Activity2 <- customer_Flight_Activity1 %>% 
+  mutate(`Flights with Companions` = as.numeric(`Flights with Companions`),
+         Distance = as.numeric(Distance),
+         `Points Redeemed` = as.numeric(`Points Redeemed`),
+         `Flights Booked` = as.numeric(`Flights Booked`),
+         `Total Flights` = as.numeric(`Total Flights`),
+         `Points Accumulated` = as.numeric(`Points Accumulated`),
+         `Dollar Cost Points Redeemed` = as.numeric(`Dollar Cost Points Redeemed`)
+  )  
+
+
+
+# 5)- nombre de clientunique present dans le porte feuille de la compagnie##
+nombre_clients_uniques <- customer_Flight_Activity1 %>% 
+  summarise(nombre_clients = n_distinct(`Loyalty Number`))
+
+# 6)- graphique en bar du nombre total de vol par mois colorié par année ###
+
+customer_Flight_Activity1$Year <- factor(customer_Flight_Activity1$Year)
+customer_Flight_Activity1$Month <- factor(customer_Flight_Activity1$Month)
+
+ggplot(customer_Flight_Activity1, aes(x = Month, fill = Year)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = c("#5E2A7E", "#D8BD27"), 
+                    name = "Année",
+                    labels = c("2017", "2018", "2019", "2020", "2021")) +
+  labs(x = "Mois", y = "Nombre total de vols", title = "Nombre total de vols par mois colorié par année") +
+  theme_minimal()
+
+# 7)- Boxplots par année de la distance de vols et des vols réservés ###
+customer_Flight_Activity1$Year <- factor(customer_Flight_Activity1$Year)
+ggplot(customer_Flight_Activity1, aes(x = Year, y = as.numeric(Distance), fill = Year)) +
+  geom_boxplot() +
+  labs(x = "Année", y = "Distance de vols", title = "Boxplot de la distance de vols par année") +
+  theme_minimal()
+
+ggplot(customer_Flight_Activity1, aes(x = Year, y = as.numeric(`Flights Booked`), fill = Year)) +
+  geom_boxplot() +
+  labs(x = "Année", y = "Vols réservés", title = "Boxplot des vols réservés par année") +
+  theme_minimal()
+#on constate que en 2021 et 2018 la compagnie a realisé les memes distances
+#mais en 2018 on a des reservations beaucoup plus constante. 
+
+# 8)- les clients qui ont voyagé seul en mars 2018##
+march_2018_data <- customer_Flight_Activity1 %>%
+  filter(Year == "2018" & Month == "3" & `Flights with Companions` == "0")
+
+nombre_clients_mars_2018 <- n_distinct(march_2018_data$`Loyalty Number`)
+
+print(nombre_clients_mars_2018)
+
+#9)-le graphique en courbe de la moyenne des points accumulés par mois par les clients voyageant accompagné###
+
+customer_Flight_Activity1$Month <- factor(customer_Flight_Activity1$Month)
+customer_Flight_Activity1$Year <- factor(customer_Flight_Activity1$Year)
+
+accompagnes_data <- customer_Flight_Activity1 %>%
+  filter(`Flights with Companions` != "0")
+
+accompagnes_data$`Points Accumulated` <- as.numeric(accompagnes_data$`Points Accumulated`)
+
+moyenne_points_par_mois <- accompagnes_data %>%
+  group_by(Year, Month) %>%
+  summarise(moyenne_points = mean(`Points Accumulated`))
+
+ggplot(moyenne_points_par_mois, aes(x = Month, y = moyenne_points, group = Year, color = Year)) +
+  geom_line() +
+  labs(x = "Mois", y = "Moyenne des points accumulés", title = "Moyenne des points accumulés par mois pour les clients voyageant accompagnés") +
+  theme_minimal()
+
+# 10)- les statistiques univariées de "Flights Booked"," Flights with Companions", "Total Flights", "Distance", "Points Accumulated###
+
+variables <- customer_Flight_Activity1[, c("Flights Booked", "Flights with Companions", "Total Flights", "Distance", "Points Accumulated")]
+
+summary(variables)
+
+
+# 11)- les statisques de ces même variables par année (statistique bivariée)
+
+library(dplyr)
+
+# Calcul des statistiques bivariées par année
+statistiques_bivariees <- customer_Flight_Activity2 %>%
+  summarise(
+    mean_Flights_Booked = mean(`Flights Booked`, na.rm = TRUE),
+    mean_Flights_with_Companions = mean(`Flights with Companions`, na.rm = TRUE),
+    mean_Total_Flights = mean(`Total Flights`, na.rm = TRUE),
+    mean_Distance = mean(Distance, na.rm = TRUE),
+    mean_Points_Accumulated = mean(`Points Accumulated`, na.rm = TRUE),
+    mean_Points_Redeemed = mean(`Points Redeemed`, na.rm = TRUE),
+    mean_Dollar_Cost_Points_Redeemed = mean(`Dollar Cost Points Redeemed`, na.rm = TRUE)
+    # Ajoutez d'autres statistiques selon vos besoins
+  )
+
+# Affichage des résultats
+print(statistiques_bivariees)
+
+#12)- la table de correlation de ces variables et interpreter les résultats##
+
+numerical_variables <- customer_Flight_Activity2 %>%
+  select_if(is.numeric)
+
+correlation_table <- cor(numerical_variables)
+
+# Afficher la matrice de corrélation
+print(correlation_table)
+
+
+# 14)- exporter en format excel les résultats des questions 10, 11 et 12###
+
+openxlsx::write.xlsx(list("variables" = variables,
+                          "statistiques_bivariees" = statistiques_bivariees,
+                          "correlation_table" = correlation_table
+), file = "output/stat_etude.xlsx")
+
+# 15)- Sauvegarder la mémoire de travail dans le dossier sauvegarde###
+
+save.image(file = "workspace.RData")
+
+file.rename(from = "workspace.RData", to = "sauvegarde/workspace.RData")
+
+
+##FIN##
+
+
+
+ 
+

@@ -1,0 +1,28 @@
+{
+    "id": "13CCA754",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1709952867318.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "id": "f75f74214c744ef490affc015c5ea7b8",
+        "name": "bar_plot",
+        "title": "bar_plot",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2850345641896,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1709952867318,
+    "read_only": false,
+    "read_only_alternatives": []
+}

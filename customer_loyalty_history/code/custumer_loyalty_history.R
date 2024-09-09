@@ -1,0 +1,227 @@
+#Analsye de la table customer_loyalty_Activity###
+
+# import package ###
+library(readr)
+library(dplyr)
+library(readxl)
+library(readr)
+library(lubridate)
+library(purrr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+library(openxlsx)
+library(tidyverse)
+
+### 1)- import data###
+customer_loyalty_history <- read_delim("input/customer_loyalty_history.txt", 
+                                       delim = "!", escape_double = FALSE, trim_ws = TRUE)
+
+
+### code de verification de la table ###
+
+# Renommer les colonnes en supprimant les caractères indésirables
+customer_loyalty_history <- rename(customer_loyalty_history,
+                                   Loyalty_Number = `Loyalty Number"*`,
+                                   Country = `Country"*`,
+                                   # Autres colonnes à renommer...
+)
+
+#Convertir les variables au bon type de données
+customer_loyalty_history$Country <- as.factor(customer_loyalty_history$Country)
+# Autres conversions...
+
+# Supprimer les lignes avec des valeurs manquantes
+customer_loyalty_history <- na.omit(customer_loyalty_history)
+
+# Filtrer les données en fonction de certaines conditions
+customer_loyalty_history <- filter(customer_loyalty_history, !is.na(Country))
+
+# Vérifier les doublons
+duplicated_rows <- duplicated(customer_loyalty_history)
+duplicated_data <- customer_loyalty_history[duplicated_rows, ]
+
+# Supprimer les doublons
+clean_customer_loyalty_history <- unique(customer_loyalty_history)
+
+library(dplyr)
+
+clean_customer_loyalty_history <- clean_customer_loyalty_history %>%
+  mutate(Province = gsub("\\\"", "", `Province"*`),
+         City = gsub("\\\"", "", `City"*`),
+         `Postal Code` = gsub("\\\"", "", `Postal Code"*`),
+         Gender = gsub("\\\"", "", `Gender"*`),
+         Education = gsub("\\\"", "", `Education"*`),
+         Salary = gsub("\\\"", "", `Salary"*`),
+         `Marital Status` = gsub("\\\"", "", `Marital Status"*`),
+         `Loyalty Card` = gsub("\\\"", "", `Loyalty Card"*`),
+         CLV = gsub("\\\"", "", `CLV"*`),
+         `Enrollment Type` = gsub("\\\"", "", `Enrollment Type"*`),
+         `Enrollment Year` = gsub("\\\"", "", `Enrollment Year"*`),
+         `Enrollment Month` = gsub("\\\"", "", `Enrollment Month"*`),
+         `Cancellation Year` = gsub("\\\"", "", `Cancellation Year"*`),
+         `Cancellation Month` = gsub("\\\"", "", `Cancellation Month`))
+
+clean_customer_loyalty_history <- clean_customer_loyalty_history %>%
+  mutate(Province = gsub("[^a-zA-Z0-9]", "", `Province"*`),
+         City = gsub("[^a-zA-Z0-9]", "", `City"*`),
+         `Postal Code` = gsub("[^a-zA-Z0-9]", "", `Postal Code"*`),
+         Gender = gsub("[^a-zA-Z0-9]", "", `Gender"*`),
+         Education = gsub("[^a-zA-Z0-9]", "", `Education"*`),
+         Salary = gsub("[^a-zA-Z0-9]", "", `Salary"*`),
+         `Marital Status` = gsub("[^a-zA-Z0-9]", "", `Marital Status"*`),
+         `Loyalty Card` = gsub("[^a-zA-Z0-9]", "", `Loyalty Card"*`),
+         CLV = gsub("[^a-zA-Z0-9]", "", `CLV"*`),
+         `Enrollment Type` = gsub("[^a-zA-Z0-9]", "", `Enrollment Type"*`),
+         `Enrollment Year` = gsub("[^a-zA-Z0-9]", "", `Enrollment Year"*`),
+         `Enrollment Month` = gsub("[^a-zA-Z0-9]", "", `Enrollment Month"*`),
+         `Cancellation Year` = gsub("[^a-zA-Z0-9]", "", `Cancellation Year"*`),
+         `Cancellation Month` = gsub("[^a-zA-Z0-9]", "", `Cancellation Month`))
+
+### 2)  - quels sont les types de variables présentes dans cette table###
+
+str(clean_customer_loyalty_history)
+
+#comme type on a des chaines de caracteres
+
+### 3)- Vérifier que le nombre de clients uniques correspond bien au nombre obetnu dans la premiere table###
+
+
+# Nombre de clients uniques dans la table nettoyée
+nb_clients_uniques <- length(unique(clean_customer_loyalty_history$Loyalty_Number))
+
+# Comparaison avec le nombre total de clients dans la première table
+nb_clients_total <- nrow(customer_loyalty_history)
+
+# Vérification
+if (nb_clients_uniques == nb_clients_total) {
+  print("Le nombre de clients uniques correspond au nombre obtenu dans la première table.")
+} else {
+  print("Le nombre de clients uniques ne correspond pas au nombre obtenu dans la première table.")
+}
+# on constate que le nombre de clients unique sont de meme 
+
+### 4)- Combien de villes sont concernés et dans combien de Province sont elles réparties ###
+
+# Nombre de villes uniques
+nb_villes <- length(unique(clean_customer_loyalty_history$City))
+
+# Nombre de provinces uniques
+nb_provinces <- length(unique(clean_customer_loyalty_history$Province))
+
+# Affichage des résultats
+cat("Nombre de villes concernées :", nb_villes, "\n")
+cat("Nombre de provinces dans lesquelles elles sont réparties :", nb_provinces, "\n")
+
+### 5)- Quel est le pourcentage des hommes avec un niveau Bachelor et des femmes avec un niveau Master ###
+
+# Filtrer les données pour les hommes avec un niveau Bachelor
+hommes_bachelor <- clean_customer_loyalty_history %>%
+  filter(Gender == "Male" & Education == "Bachelor")
+
+# Filtrer les données pour les femmes avec un niveau Master
+femmes_master <- clean_customer_loyalty_history %>%
+  filter(Gender == "Female" & Education == "Master")
+
+# Calculer le nombre total d'hommes avec un niveau Bachelor
+nb_hommes_bachelor <- nrow(hommes_bachelor)
+
+# Calculer le nombre total de femmes avec un niveau Master
+nb_femmes_master <- nrow(femmes_master)
+
+# Calculer le nombre total de clients
+nb_total_clients <- nrow(clean_customer_loyalty_history)
+
+# Calculer le pourcentage d'hommes avec un niveau Bachelor
+pourcentage_hommes_bachelor <- (nb_hommes_bachelor / nb_total_clients) * 100
+
+# Calculer le pourcentage de femmes avec un niveau Master
+pourcentage_femmes_master <- (nb_femmes_master / nb_total_clients) * 100
+
+# Afficher les résultats
+cat("Pourcentage d'hommes avec un niveau Bachelor:", pourcentage_hommes_bachelor, "%\n")
+cat("Pourcentage de femmes avec un niveau Master:", pourcentage_femmes_master, "%\n")
+
+
+### 6)- Faire le graphique du salaire moyen par sexe colorié par le statut marital###
+
+clean_customer_loyalty_history$Salary <- factor(clean_customer_loyalty_history$Salary)
+clean_customer_loyalty_history$Gender <- factor(clean_customer_loyalty_history$Gender)
+
+ggplot(clean_customer_loyalty_history, aes(x = Gender, y = Salary, fill = `Marital Status`)) +
+  geom_col(position = "dodge") +
+  labs(title = "Salaire moyen par sexe et statut marital",
+       x = "Sexe", y = "Salaire moyen") +
+  theme_minimal()
+
+
+# 7)- Faire le boxplot des salaires par type de carte de fidélité###
+
+clean_customer_loyalty_history$Salary <- factor(clean_customer_loyalty_history$Salary, levels = c("College", "Bachelor", "Master", "PhD"))
+
+ggplot(clean_customer_loyalty_history, aes(x = `Loyalty Card`, y = Salary, fill = `Loyalty Card`)) +
+  geom_boxplot() +
+  labs(title = "Boxplot des salaires par type de carte de fidélité",
+       x = "Type de carte de fidélité", y = "Salaire") +
+  scale_fill_discrete(name = "Type de carte de fidélité") +
+  theme_minimal()
+
+
+# 8)-  8- Calculer les répartitions et les pourcentages (stat univariée) des  variables : Gender, Education, Marital Status, Loyalty Card et Enrollement Type
+
+# Création des répartitions et pourcentages pour chaque variable
+gender_freq <- table(clean_customer_loyalty_history$Gender)
+gender_percent <- prop.table(gender_freq) * 100
+
+education_freq <- table(clean_customer_loyalty_history$Education)
+education_percent <- prop.table(education_freq) * 100
+
+marital_freq <- table(clean_customer_loyalty_history$`Marital Status`)
+marital_percent <- prop.table(marital_freq) * 100
+
+loyalty_freq <- table(clean_customer_loyalty_history$`Loyalty Card`)
+loyalty_percent <- prop.table(loyalty_freq) * 100
+
+enrollment_freq <- table(clean_customer_loyalty_history$`Enrollment Type`)
+enrollment_percent <- prop.table(enrollment_freq) * 100
+
+# Création de la table récapitulative
+summary_table <- rbind(
+  Gender = c(freq = gender_freq, percent = gender_percent),
+  Education = c(freq = education_freq, percent = education_percent),
+  `Marital Status` = c(freq = marital_freq, percent = marital_percent),
+  `Loyalty Card` = c(freq = loyalty_freq, percent = loyalty_percent),
+  `Enrollment Type` = c(freq = enrollment_freq, percent = enrollment_percent)
+)
+
+print(summary_table)
+
+
+
+# 9)- 9- Faire la table de contingence de Education, Marital Status, Loyalty Card et Enrollement Type par Gender
+
+contingency_table <- clean_customer_loyalty_history %>%
+  count(Gender, Education, `Marital Status`, `Loyalty Card`, `Enrollment Type`)
+
+print(contingency_table)
+
+
+
+# 11)- exporter en format excel les résultats des questions 8 et 9
+
+
+openxlsx::write.xlsx(
+  list(
+    summary_table= summary_table,
+    contingency_table = contingency_table
+  ), 
+  file = "output/stat_etude.xlsx"
+)
+
+# 3)- # Sauvegarder la mémoire de travail dans le dossier "sauvegarde"
+# Définir le répertoire de travail
+setwd("C:/Users/arman/OneDrive/Bureau/programmation R/Examen/Projet examens")
+
+# Sauvegarder la mémoire de travail
+save.image("code.RData")
+
